@@ -713,22 +713,6 @@ def page_about():
 
     ---
 
-    ## 📊 Dataset Details
-
-    - **Source:** Continuous Ambient Air Quality Monitoring Stations (CAAQMS)  
-    - **Cities Covered:** 26 major Indian cities  
-    - **Data Type:** Hourly/continuous pollutant readings  
-    - **Total Records:** ~30,000 rows  
-    - **Main Pollutants Included:**  
-      - PM2.5, PM10  
-      - NO, NO2, NOx  
-      - CO, SO2, NH3  
-      - O3  
-      - Benzene, Toluene, Xylene  
-      - **AQI (Air Quality Index)**  
-
-    ---
-
     ## 🧠 Features of This Application
 
     ### **1. Data Overview**
@@ -758,17 +742,6 @@ def page_about():
 
     ---
 
-    ## 🎯 Purpose of the Project
-
-    This project aims to:
-
-    - Understand India’s air pollution patterns  
-    - Visualize city-level pollution hotpots  
-    - Build ML models to predict AQI  
-    - Provide interactive tools for environmental analysis  
-    - Raise awareness on air quality and its impact  
-
-    ---
 
     ## 👨‍💻 Author
 
