@@ -22,6 +22,9 @@ from sklearn.ensemble import RandomForestRegressor
 import warnings
 warnings.filterwarnings("ignore")
 
+import streamlit as st
+st.write("🚀 App started successfully")
+
 # -----------------------------
 # CONSTANTS
 # -----------------------------
