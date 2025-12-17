@@ -118,6 +118,36 @@ def page_home(df, files):
     st.markdown("""
 
 
+     ## 🧠 Features of This Application
+
+    ### **1. Data Overview**
+    - Summary statistics  
+    - First 50 rows preview  
+
+    ### **2. EDA (Exploratory Data Analysis)**
+    - Monthly and yearly trends  
+    - Seasonal and weekday patterns  
+    - Distribution plots, boxplots  
+    - City-wise pollutant comparison  
+    - Correlation heatmaps  
+
+    ### **3. Geographical Maps**
+    - AQI marker maps  
+    - Pollutant heatmaps  
+    - Fast marker clusters  
+    - Custom base map themes  
+
+    ### **4. Machine Learning Model**
+    - Multiple model selection:  
+      **Random Forest, Extra Trees, Decision Tree, Linear Regression**  
+    - Train/test split selection  
+    - Feature importance  
+    - Predicted vs Actual comparison  
+    - User input prediction form  
+
+    ---
+
+
      #### **Purpose of This App**
     This tool helps you:
     - Visualize trends in air pollution  
