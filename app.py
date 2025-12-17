@@ -116,6 +116,16 @@ def page_home(df, files):
     st.success(f"Loaded {len(files)} file(s). Total rows: {len(df):,}")
 
     st.markdown("""
+
+
+     #### **Purpose of This App**
+    This tool helps you:
+    - Visualize trends in air pollution  
+    - Compare cities on pollution levels  
+    - Explore spatial pollution patterns on maps  
+    - Predict **AQI** using machine learning models 
+
+     ---
     ### 📘 About This Dataset
 
     This dataset contains **India's air quality measurements** collected from multiple
@@ -132,13 +142,7 @@ def page_home(df, files):
       - O3, Benzene, Toluene, Xylene  
       - **AQI (Air Quality Index)**  
     - 🗂 **Total Rows:** Provides a large enough sample for visualisation and machine learning prediction  
-
-    #### **Purpose of This App**
-    This tool helps you:
-    - Visualize trends in air pollution  
-    - Compare cities on pollution levels  
-    - Explore spatial pollution patterns on maps  
-    - Predict **AQI** using machine learning models  
+ 
 
     ---
     """)
@@ -413,7 +417,7 @@ def page_maps(df):
 
     map_theme = st.sidebar.selectbox(
         "Base Map Theme",
-        ["OpenStreetMap", "CartoDB Dark Matter", "Stamen Terrain", "Stamen Toner"]
+        ["OpenStreetMap", "CartoDB Dark Matter"]
     )
 
     pollutant_choice = st.sidebar.selectbox(
@@ -697,74 +701,3 @@ def page_model(df):
         predicted_aqi = model.predict(input_df)[0]
 
         st.success(f"🌟 Predicted AQI: **{predicted_aqi:.2f}**")
-
-
-#  About Page
-
-def page_about():
-    st.title("📘 About This Project")
-
-    st.markdown("""
-    ## 🌍 India Air Quality Explorer
-
-    This interactive dashboard visualizes **India’s air pollution trends**, geographical
-    patterns, and predicts AQI using machine learning models.  
-    It is built as an end-to-end data science and geospatial analytics project.
-
-    ---
-
-    ## 🧠 Features of This Application
-
-    ### **1. Data Overview**
-    - Summary statistics  
-    - First 50 rows preview  
-
-    ### **2. EDA (Exploratory Data Analysis)**
-    - Monthly and yearly trends  
-    - Seasonal and weekday patterns  
-    - Distribution plots, boxplots  
-    - City-wise pollutant comparison  
-    - Correlation heatmaps  
-
-    ### **3. Geographical Maps**
-    - AQI marker maps  
-    - Pollutant heatmaps  
-    - Fast marker clusters  
-    - Custom base map themes  
-
-    ### **4. Machine Learning Model**
-    - Multiple model selection:  
-      **Random Forest, Extra Trees, Decision Tree, Linear Regression**  
-    - Train/test split selection  
-    - Feature importance  
-    - Predicted vs Actual comparison  
-    - User input prediction form  
-
-    ---
-
-
-    ## 👨‍💻 Author
-
-    **Chappidi Vamsi Krishna **  
-    Developing intelligent data apps using Python, Streamlit, and machine learning.""")
-
-
-# -----------------------------
-# MAIN ROUTER
-# -----------------------------
-def main():
-    df_raw, files = load_dataset()
-    df = preprocess(df_raw)
-
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Data Overview", "EDA", "Maps", "Model", "About"])
-
-    if page == "Home": page_home(df, files)
-    elif page == "Data Overview": page_data_overview(df)
-    elif page == "EDA": page_eda(df)
-    elif page == "Maps": page_maps(df)
-    elif page == "Model": page_model(df)
-    elif page == "About":page_about()
-
-if __name__ == "__main__":
-    main()
