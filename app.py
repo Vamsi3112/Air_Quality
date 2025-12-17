@@ -427,10 +427,18 @@ def page_maps(df):
         ["OpenStreetMap", "CartoDB Dark Matter"]
     )
 
+    # --- MODIFIED SECTION START ---
+    map_pollutants = [c for c in POLLUTANTS if c in df.columns]
+    
+    # Calculate index for AQI
+    map_default_index = map_pollutants.index("AQI") if "AQI" in map_pollutants else 0
+
     pollutant_choice = st.sidebar.selectbox(
         "Pollutant for Heatmap",
-        [c for c in POLLUTANTS if c in df.columns]
+        map_pollutants,
+        index=map_default_index
     )
+    # --- MODIFIED SECTION END ---
 
     # Prepare dataset with coordinates
     df = df.copy()
@@ -523,7 +531,6 @@ def page_maps(df):
     # Display Map
     # -----------------------------------------------------
     st_folium(m, width=900, height=550)
-
 
 # -----------------------------
 # MODEL — FAST + CACHED
