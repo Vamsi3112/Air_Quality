@@ -1,3 +1,6 @@
+# =====================================================
+# ENV & CONFIG
+# =====================================================
 import os
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
@@ -8,23 +11,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.write("🚀 App started successfully")
+
+# =====================================================
+# IMPORTS
+# =====================================================
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import folium
 from streamlit_folium import st_folium
+
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.ensemble import RandomForestRegressor
+
 import warnings
 warnings.filterwarnings("ignore")
 
-st.write("🚀 App started successfully")
-
-# -----------------------------
+# =====================================================
 # CONSTANTS
-# -----------------------------
+# =====================================================
 POLLUTANTS = [
     "PM2.5", "PM10", "NO", "NO2", "NOx", "NH3", "CO",
     "SO2", "O3", "Benzene", "Toluene", "Xylene", "AQI"
@@ -46,9 +53,9 @@ CITY_COORDS = {
     "Bhopal":[23.2599,77.4126], "Brajrajnagar":[21.8160,83.9008]
 }
 
-# -----------------------------
+# =====================================================
 # LOAD DATA
-# -----------------------------
+# =====================================================
 @st.cache_data
 def load_dataset(folder="dataset"):
     if not os.path.exists(folder):
@@ -59,8 +66,9 @@ def load_dataset(folder="dataset"):
 
     for f in files:
         try:
-            df_tmp = pd.read_csv(os.path.join(folder, f))
-            dfs.append(df_tmp)
+            df = pd.read_csv(os.path.join(folder, f))
+            df["__source"] = f
+            dfs.append(df)
         except:
             pass
 
@@ -69,9 +77,9 @@ def load_dataset(folder="dataset"):
 
     return pd.concat(dfs, ignore_index=True), files
 
-# -----------------------------
+# =====================================================
 # PREPROCESS
-# -----------------------------
+# =====================================================
 @st.cache_data
 def preprocess(df):
     if df.empty:
@@ -79,7 +87,6 @@ def preprocess(df):
 
     df = df.copy()
     df.columns = df.columns.str.strip()
-
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
     df = df.dropna(subset=["City", "Date"])
 
@@ -90,8 +97,10 @@ def preprocess(df):
             present.append(c)
 
     df = df.sort_values(["City", "Date"])
-    df[present] = df.groupby("City")[present].transform(lambda g: g.ffill().bfill())
-    df[present] = df[present].fillna(df[present].median())
+    df[present] = df.groupby("City")[present].ffill().bfill()
+
+    for c in present:
+        df[c] = df[c].fillna(df[c].median())
 
     df["Year"] = df["Date"].dt.year
     df["Month"] = df["Date"].dt.month
@@ -103,192 +112,166 @@ def preprocess(df):
 
     return df.reset_index(drop=True)
 
-# -----------------------------
-# HOME PAGE
-# -----------------------------
+# =====================================================
+# HOME
+# =====================================================
 def page_home(df, files):
     st.title("🇮🇳 India Air Quality Explorer")
-
     st.success(f"Loaded {len(files)} file(s) | Total rows: {len(df):,}")
 
     st.markdown("""
-### 🧪 Pollutants Tracked
-- PM2.5, PM10  
-- NO, NO2, NOx  
-- CO, SO2, NH3  
-- O3, Benzene, Toluene, Xylene  
-- **AQI (Air Quality Index)**  
+    ### Purpose
+    - Visualize air pollution trends  
+    - Compare cities  
+    - Explore pollution maps  
+    - Predict AQI using ML  
+    """)
 
----
-#### 🔍 *Use the sidebar to explore different sections*
-""")
-
-# -----------------------------
+# =====================================================
 # DATA OVERVIEW
-# -----------------------------
+# =====================================================
 def page_data_overview(df):
     st.header("📊 Data Overview")
-
     if df.empty:
-        st.warning("Dataset is empty!")
+        st.warning("No data available.")
         return
+    st.dataframe(df.head(50))
+    st.dataframe(df.describe().T)
 
-    st.sidebar.subheader("Filters")
-
-    cities = ["All"] + sorted(df["City"].unique())
-    city_sel = st.sidebar.selectbox("Select City", cities)
-
-    min_date, max_date = df["Date"].min(), df["Date"].max()
-    date_range = st.sidebar.date_input(
-        "Select Date Range",
-        value=[min_date, max_date],
-        min_value=min_date,
-        max_value=max_date
-    )
-
-    highlight_options = ["None"] + [c for c in POLLUTANTS if c in df.columns]
-    highlight_index = highlight_options.index("AQI") if "AQI" in highlight_options else 0
-
-    highlight_col = st.sidebar.selectbox(
-        "Highlight Pollutant Column",
-        highlight_options,
-        index=highlight_index
-    )
-
-    df_f = df.copy()
-    if city_sel != "All":
-        df_f = df_f[df_f["City"] == city_sel]
-
-    df_f = df_f[
-        (df_f["Date"] >= pd.to_datetime(date_range[0])) &
-        (df_f["Date"] <= pd.to_datetime(date_range[1]))
-    ]
-
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Rows", f"{len(df_f):,}")
-    col2.metric("Cities", df_f["City"].nunique())
-    col3.metric("Avg AQI", f"{df_f['AQI'].mean():.2f}")
-    col4.metric("Date Span", f"{date_range[0]} → {date_range[1]}")
-
-    st.subheader("📄 Data Preview")
-
-    if highlight_col != "None":
-        def highlight(x):
-            return ['background-color:#ffe599' if x.name == highlight_col else '' for _ in x]
-        st.dataframe(df_f.head(50).style.apply(highlight))
-    else:
-        st.dataframe(df_f.head(50))
-
-# -----------------------------
-# EDA (AQI DEFAULT)
-# -----------------------------
+# =====================================================
+# EDA
+# =====================================================
 def page_eda(df):
     st.header("📈 Exploratory Data Analysis")
+    if df.empty:
+        st.warning("No data available.")
+        return
 
-    st.sidebar.subheader("EDA Controls")
-
-    cities = ["All"] + sorted(df["City"].unique())
-    city = st.sidebar.selectbox("City", cities)
-
-    pollutants = [c for c in POLLUTANTS if c in df.columns]
-    default_index = pollutants.index("AQI") if "AQI" in pollutants else 0
-
-    pollutant = st.sidebar.selectbox(
-        "Pollutant",
-        pollutants,
-        index=default_index
-    )
-
-    df_f = df if city == "All" else df[df["City"] == city]
-
-    yearly = df_f.groupby("Year")[pollutant].mean()
-
-    fig, ax = plt.subplots(figsize=(8,4))
-    ax.plot(yearly.index, yearly.values, marker="o")
-    ax.set_title(f"Yearly Trend of {pollutant}")
-    ax.grid(True)
+    pollutant = st.selectbox("Pollutant", [p for p in POLLUTANTS if p in df.columns])
+    fig, ax = plt.subplots()
+    sns.histplot(df[pollutant], kde=True, ax=ax)
     st.pyplot(fig)
 
-# -----------------------------
-# MAPS (AQI DEFAULT)
-# -----------------------------
+# =====================================================
+# MAPS
+# =====================================================
 def page_maps(df):
     st.header("🗺️ AQI Maps")
+    if df.empty:
+        st.warning("No data available.")
+        return
 
-    pollutant_list = [c for c in POLLUTANTS if c in df.columns]
-    default_index = pollutant_list.index("AQI") if "AQI" in pollutant_list else 0
-
-    pollutant_choice = st.sidebar.selectbox(
-        "Pollutant",
-        pollutant_list,
-        index=default_index
-    )
-
-    df["Lat"] = df["City"].map(lambda c: CITY_COORDS.get(str(c), [None,None])[0])
-    df["Lon"] = df["City"].map(lambda c: CITY_COORDS.get(str(c), [None,None])[1])
-    df = df.dropna(subset=["Lat","Lon"])
+    df = df.copy()
+    df["Latitude"] = df["City"].map(lambda c: CITY_COORDS.get(c, [None, None])[0])
+    df["Longitude"] = df["City"].map(lambda c: CITY_COORDS.get(c, [None, None])[1])
+    df = df.dropna(subset=["Latitude", "Longitude"])
 
     m = folium.Map(location=[22.97, 78.65], zoom_start=5)
+    stats = df.groupby("City").agg({"AQI":"mean","Latitude":"first","Longitude":"first"}).reset_index()
 
-    stats = df.groupby("City").mean(numeric_only=True)
-
-    for city, r in stats.iterrows():
+    for _, r in stats.iterrows():
         folium.CircleMarker(
-            location=[r["Lat"], r["Lon"]],
-            radius=10,
-            popup=f"{city}<br>{pollutant_choice}: {r[pollutant_choice]:.1f}",
-            fill=True,
-            fill_opacity=0.7
+            [r["Latitude"], r["Longitude"]],
+            radius=8,
+            popup=f"{r['City']} AQI {r['AQI']:.1f}",
+            color="red",
+            fill=True
         ).add_to(m)
 
-    st_folium(m, width=900, height=500)
+    st_folium(m, width=900, height=550)
 
-# -----------------------------
-# MODEL
-# -----------------------------
+# =====================================================
+# MODEL (ALL FEATURES)
+# =====================================================
 def page_model(df):
     st.header("🤖 AQI Prediction Model")
+    if df.empty:
+        st.warning("No data available.")
+        return
 
-    FEATURES = [c for c in POLLUTANTS if c != "AQI" and c in df.columns]
-    FEATURES += ["Year", "Month", "Day", "Weekday", "City_Code"]
+    FEATURES = [c for c in POLLUTANTS if c in df.columns and c != "AQI"]
+    FEATURES += ["Year","Month","Day","Weekday","City_Code"]
 
-    X = df[FEATURES]
-    y = df["AQI"]
+    X = df[FEATURES].fillna(df[FEATURES].median())
+    y = df["AQI"].fillna(df["AQI"].median())
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
-    model = RandomForestRegressor(n_estimators=50, random_state=42)
-    model.fit(X_train, y_train)
+    from sklearn.ensemble import RandomForestRegressor
+    model = RandomForestRegressor(
+        n_estimators=100,
+        random_state=42,
+        n_jobs=-1
+    )
 
+    model.fit(X_train, y_train)
     preds = model.predict(X_test)
 
     rmse = np.sqrt(mean_squared_error(y_test, preds))
     r2 = r2_score(y_test, preds)
+    mape = np.mean(np.abs((y_test - preds) / np.clip(y_test, 1e-6, None))) * 100
 
-    st.metric("RMSE", f"{rmse:.2f}")
-    st.metric("R² Score", f"{r2:.3f}")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("RMSE", f"{rmse:.2f}")
+    c2.metric("R²", f"{r2:.3f}")
+    c3.metric("MAPE (%)", f"{mape:.2f}")
 
-# -----------------------------
-# MAIN
-# -----------------------------
-df, files = load_dataset()
-df = preprocess(df)
+    st.subheader("🔮 Predict AQI")
 
-page = st.sidebar.radio(
-    "Navigation",
-    ["Home", "Data Overview", "EDA", "Maps", "Model"]
-)
+    with st.form("predict"):
+        city = st.selectbox("City", df["City"].unique())
+        date = st.date_input("Date")
 
-if page == "Home":
-    page_home(df, files)
-elif page == "Data Overview":
-    page_data_overview(df)
-elif page == "EDA":
-    page_eda(df)
-elif page == "Maps":
-    page_maps(df)
-elif page == "Model":
-    page_model(df)
+        inputs = {}
+        for p in FEATURES:
+            if p not in ["Year","Month","Day","Weekday","City_Code"]:
+                inputs[p] = st.number_input(p, value=float(df[p].median()))
 
+        submitted = st.form_submit_button("Predict")
+
+    if submitted:
+        date = pd.to_datetime(date)
+        inputs["Year"] = date.year
+        inputs["Month"] = date.month
+        inputs["Day"] = date.day
+        inputs["Weekday"] = date.weekday()
+
+        city_map = dict(zip(df["City"].cat.categories, df["City"].cat.codes))
+        inputs["City_Code"] = city_map[city]
+
+        input_df = pd.DataFrame([inputs])[FEATURES]
+        pred = model.predict(input_df)[0]
+
+        st.success(f"🌟 Predicted AQI: {pred:.2f}")
+
+# =====================================================
+# MAIN ROUTER
+# =====================================================
+def main():
+    df_raw, files = load_dataset()
+    df = preprocess(df_raw)
+
+    st.sidebar.title("Navigation")
+    page = st.sidebar.radio(
+        "Go to",
+        ["Home", "Data Overview", "EDA", "Maps", "Model"]
+    )
+
+    if page == "Home":
+        page_home(df, files)
+    elif page == "Data Overview":
+        page_data_overview(df)
+    elif page == "EDA":
+        page_eda(df)
+    elif page == "Maps":
+        page_maps(df)
+    elif page == "Model":
+        page_model(df)
+
+# =====================================================
+# ENTRY POINT
+# =====================================================
+if __name__ == "__main__":
+    main()
