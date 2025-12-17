@@ -119,11 +119,30 @@ def page_home(df, files):
     st.title("🇮🇳 India Air Quality Explorer")
     st.success(f"Loaded {len(files)} file(s) | Total rows: {len(df):,}")
 
+    st.markdown("""
+    ### Purpose
+    - Visualize air pollution trends  
+    - Compare cities  
+    - Explore pollution maps  
+    - Predict AQI using ML  
+    """)
+
+# =====================================================
+# DATA OVERVIEW
+# =====================================================
+def page_data_overview(df):
+    st.header("📊 Data Overview")
+    if df.empty:
+        st.warning("No data available.")
+        return
+    st.dataframe(df.head(50))
+    st.dataframe(df.describe().T)
+
 # =====================================================
 # EDA
 # =====================================================
 def page_eda(df):
-    st.header("📊 Exploratory Data Analysis")
+    st.header("📈 Exploratory Data Analysis")
     if df.empty:
         st.warning("No data available.")
         return
@@ -162,7 +181,7 @@ def page_maps(df):
     st_folium(m, width=900, height=550)
 
 # =====================================================
-# MODEL
+# MODEL (ALL FEATURES)
 # =====================================================
 def page_model(df):
     st.header("🤖 AQI Prediction Model")
@@ -181,9 +200,13 @@ def page_model(df):
     )
 
     from sklearn.ensemble import RandomForestRegressor
-    model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-    model.fit(X_train, y_train)
+    model = RandomForestRegressor(
+        n_estimators=100,
+        random_state=42,
+        n_jobs=-1
+    )
 
+    model.fit(X_train, y_train)
     preds = model.predict(X_test)
 
     rmse = np.sqrt(mean_squared_error(y_test, preds))
@@ -195,6 +218,34 @@ def page_model(df):
     c2.metric("R²", f"{r2:.3f}")
     c3.metric("MAPE (%)", f"{mape:.2f}")
 
+    st.subheader("🔮 Predict AQI")
+
+    with st.form("predict"):
+        city = st.selectbox("City", df["City"].unique())
+        date = st.date_input("Date")
+
+        inputs = {}
+        for p in FEATURES:
+            if p not in ["Year","Month","Day","Weekday","City_Code"]:
+                inputs[p] = st.number_input(p, value=float(df[p].median()))
+
+        submitted = st.form_submit_button("Predict")
+
+    if submitted:
+        date = pd.to_datetime(date)
+        inputs["Year"] = date.year
+        inputs["Month"] = date.month
+        inputs["Day"] = date.day
+        inputs["Weekday"] = date.weekday()
+
+        city_map = dict(zip(df["City"].cat.categories, df["City"].cat.codes))
+        inputs["City_Code"] = city_map[city]
+
+        input_df = pd.DataFrame([inputs])[FEATURES]
+        pred = model.predict(input_df)[0]
+
+        st.success(f"🌟 Predicted AQI: {pred:.2f}")
+
 # =====================================================
 # MAIN ROUTER
 # =====================================================
@@ -203,10 +254,15 @@ def main():
     df = preprocess(df_raw)
 
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "EDA", "Maps", "Model"])
+    page = st.sidebar.radio(
+        "Go to",
+        ["Home", "Data Overview", "EDA", "Maps", "Model"]
+    )
 
     if page == "Home":
         page_home(df, files)
+    elif page == "Data Overview":
+        page_data_overview(df)
     elif page == "EDA":
         page_eda(df)
     elif page == "Maps":
