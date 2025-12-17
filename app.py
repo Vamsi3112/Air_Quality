@@ -2,11 +2,19 @@ import streamlit as st
 
 st.write("🚀 App started successfully")
 
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Test"])
+def main():
+    st.sidebar.title("Navigation")
 
-if page == "Home":
-    st.title("Home Page Works ✅")
-else:
-    st.title("Test Page Works ✅")
+    page = st.sidebar.radio("Go to", ["Home", "EDA", "Maps", "Model"])
 
+    if page == "Home":
+        st.title("Home Page Works ✅")
+    elif page == "EDA":
+        st.title("EDA Page")
+    elif page == "Maps":
+        st.title("Maps Page")
+    elif page == "Model":
+        st.title("Model Page")
+
+if __name__ == "__main__":
+    main()
