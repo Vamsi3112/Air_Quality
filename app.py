@@ -148,7 +148,7 @@ def page_home(df, files):
     ---
 
 
-     #### **Purpose of This App**
+     #### **Purpose of This Application**
     This tool helps you:
     - Visualize trends in air pollution  
     - Compare cities on pollution levels  
