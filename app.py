@@ -271,8 +271,14 @@ def page_eda(df):
     cities = ["All"] + sorted(df["City"].unique())
     city_sel = st.sidebar.selectbox("City", cities)
 
+    # --- MODIFIED SECTION START ---
     pollutants = [c for c in POLLUTANTS if c in df.columns]
-    pollutant = st.sidebar.selectbox("Pollutant", pollutants)
+    
+    # Find the index of "AQI" to set it as default
+    default_index = pollutants.index("AQI") if "AQI" in pollutants else 0
+    
+    pollutant = st.sidebar.selectbox("Pollutant", pollutants, index=default_index)
+    # --- MODIFIED SECTION END ---
 
     eda_option = st.sidebar.selectbox(
         "Select EDA Visualisation",
@@ -294,6 +300,7 @@ def page_eda(df):
         st.warning("No data for the selected filters.")
         return
 
+    # ... (Rest of the visualizations remain exactly the same) ...
     # -------------------------
     # 1. Monthly Trend
     # -------------------------
